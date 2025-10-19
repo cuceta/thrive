@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:thrive/screens/home_screen.dart';
+import 'package:thrive/screens/login_screen.dart';
+import 'package:thrive/screens/register_screen.dart';
+import 'package:thrive/screens/landing_screen.dart';
+import 'package:thrive/screens/Mood.dart';
 import 'firebase_options.dart';
-
-// import 'screens/auth_wrapper.dart';
-import 'screens/login_screen.dart';
-import 'screens/register_screen.dart';
-import 'screens/landing_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,7 +13,7 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    runApp(MyApp());
+    runApp(const MyApp());
   } catch (e, stack) {
     debugPrint("Firebase init failed: $e");
     debugPrint("$stack");
@@ -22,25 +21,24 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'My Flutter App',
-
+      title: 'Thrive',
       theme: ThemeData(
         useMaterial3: true,
-        // canvasColor: Color.fromARGB(255, 219, 249, 230),
-
         colorSchemeSeed: const Color.fromARGB(255, 49, 80, 47),
       ),
       debugShowCheckedModeBanner: false,
       initialRoute: '/',
       routes: {
-        // '/': (context) => AuthWrapper(), // <- check login state here
         '/': (context) => LandingScreen(),
         '/login': (context) => LoginScreen(),
         '/register': (context) => RegisterScreen(),
         '/home': (context) => HomeScreen(),
+        '/mood': (context) => const Mood(),
       },
     );
   }

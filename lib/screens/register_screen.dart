@@ -10,26 +10,60 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen>
     with SingleTickerProviderStateMixin {
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
+
+  bool _passwordVisible = false;
+  bool _confirmPasswordVisible = false;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _loading = false;
 
   void _register() async {
-    setState(() => _loading = true);
-    try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
-      // AuthWrapper will automatically navigate to HomeScreen
-    } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message ?? 'Registration failed')),
-      );
-    } finally {
-      setState(() => _loading = false);
-    }
+  final name = _nameController.text.trim();
+  final email = _emailController.text.trim();
+  final password = _passwordController.text.trim();
+  final confirmPassword = _confirmPasswordController.text.trim();
+
+  if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please fill in all fields')),
+    );
+    return;
   }
+
+  if (password != confirmPassword) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Passwords do not match')),
+    );
+    return;
+  }
+
+  setState(() => _loading = true);
+  try {
+    await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
+
+    await FirebaseAuth.instance.currentUser?.updateDisplayName(name);
+
+    // ✅ Navigate to login screen after successful registration
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Registration successful! Please log in.')),
+    );
+
+    Navigator.pushReplacementNamed(context, '/login');
+  } on FirebaseAuthException catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(e.message ?? 'Registration failed')),
+    );
+  } finally {
+    setState(() => _loading = false);
+  }
+}
+
 
   late final AnimationController _controller;
 
@@ -56,6 +90,10 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   @override
   void dispose() {
+    _nameController.dispose();
+    _confirmPasswordController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -121,18 +159,66 @@ class _RegisterScreenState extends State<RegisterScreen>
                 width: double.infinity,
                 height: 250,
               ),
-              
+
               // const SizedBox(height: 40),
+              // Name
+              TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(labelText: "Name"),
+              ),
+              const SizedBox(height: 20),
+
+              // Email
               TextField(
                 controller: _emailController,
                 decoration: const InputDecoration(labelText: "Email"),
               ),
               const SizedBox(height: 20),
+
+              // Password
               TextField(
                 controller: _passwordController,
-                decoration: const InputDecoration(labelText: "Password"),
-                obscureText: true,
+                obscureText: !_passwordVisible,
+                decoration: InputDecoration(
+                  labelText: "Password",
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _passwordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _passwordVisible = !_passwordVisible;
+                      });
+                    },
+                  ),
+                ),
               ),
+              const SizedBox(height: 20),
+
+              // Confirm Password
+              TextField(
+                controller: _confirmPasswordController,
+                obscureText: !_confirmPasswordVisible,
+                decoration: InputDecoration(
+                  labelText: "Confirm Password",
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _confirmPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _confirmPasswordVisible = !_confirmPasswordVisible;
+                      });
+                    },
+                  ),
+                ),
+              ),
+              const SizedBox(height: 40),
+
               const SizedBox(height: 40),
               _loading
                   ? const CircularProgressIndicator()
@@ -141,7 +227,12 @@ class _RegisterScreenState extends State<RegisterScreen>
                       child: ElevatedButton(
                         onPressed: _register,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 235, 96, 57),
+                          backgroundColor: const Color.fromARGB(
+                            255,
+                            235,
+                            96,
+                            57,
+                          ),
                           textStyle: const TextStyle(fontSize: 32),
                         ),
                         child: Text(
@@ -161,7 +252,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                   style: GoogleFonts.fredoka(
                     color: const Color.fromRGBO(47, 76, 45, 1),
                     // decoration: TextDecoration.underline,
-                  ),),
+                  ),
+                ),
               ),
             ],
           ),

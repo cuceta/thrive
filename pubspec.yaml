@@ -39,11 +39,21 @@ dependencies:
   firebase_core: ^4.2.0
   firebase_auth: ^6.1.1
   google_fonts: ^6.3.2
+  cloud_firestore: ^6.0.3
+  fl_chart: ^1.1.1
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.4
+
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/app_logo.png"
+
   
 
   # The "flutter_lints" package below contains a set of recommended lints to
