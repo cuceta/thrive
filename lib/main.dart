@@ -27,10 +27,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Thrive',
+      // theme: ThemeData(
+      //   useMaterial3: true,
+      //   colorSchemeSeed: const Color.fromARGB(255, 49, 80, 47),
+      // ),
       theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: const Color.fromARGB(255, 49, 80, 47),
-      ),
+  dividerColor: Colors.transparent,
+  dividerTheme: const DividerThemeData(color: Colors.transparent),
+),
       debugShowCheckedModeBanner: false,
       initialRoute: '/',
       routes: {
