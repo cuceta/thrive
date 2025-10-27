@@ -73,7 +73,7 @@ class _LandingScreenState extends State<LandingScreen>
                                 'assets/images/star.svg',
                                 width: starSizes[index],
                                 height: starSizes[index],
-                                color: const Color.fromARGB(255, 235, 96, 57),
+                                color: const Color.fromARGB(255, 236, 165, 84),
                               ),
                             ),
                           );
