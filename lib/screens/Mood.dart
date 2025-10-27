@@ -144,7 +144,7 @@ class _MoodState extends State<Mood> {
                       : () => Navigator.of(dialogContext).pop(),
                   child: Text(
                     'Cancel',
-                    style: moodTextStyle.copyWith(fontSize: 14,),
+                    style: moodTextStyle.copyWith(fontSize: 14),
                   ),
                 ),
                 ElevatedButton(
@@ -348,25 +348,33 @@ class _MoodState extends State<Mood> {
 
         return Center(
           child: Container(
-            height: height + 40,
+            // Increased total height for more space around title and stars
+            height: height + 100,
             width: containerWidth,
             margin: EdgeInsets.only(
-              top: padding.top + 20,
-              bottom: padding.bottom + 20,
+              top: padding.top + 30,
+              bottom: padding.bottom + 30,
             ),
             decoration: BoxDecoration(
-              color: Colors.white, // keep outer white box
-              borderRadius: BorderRadius.circular(16),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
             ),
             clipBehavior: Clip.antiAlias,
             child: Stack(
               children: [
-                // slightly smaller inset galaxy background layer
+                // 🌌 Slightly larger inner gradient box
                 Positioned(
                   left: 10,
                   right: 10,
-                  top: 5,
-                  bottom: 5,
+                  top: 10,
+                  bottom: 10,
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -374,24 +382,20 @@ class _MoodState extends State<Mood> {
                         end: Alignment.bottomCenter,
                         colors: [_nightTop, _nightBottom],
                       ),
-                      borderRadius: BorderRadius.circular(
-                        12,
-                      ), // match shape but inset
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                 ),
-
-                if (showStars)
-                  _TinyStarsLayer(), // still covers entire inner galaxy area
-                // ⭐ Animated yellow icons
+                if (showStars) _TinyStarsLayer(),
                 ...points.map((p) {
-                  final int dayIdx = p['x'] as int; // 0..6
+                  final int dayIdx = p['x'] as int;
                   final double level = (p['y'] as num).toDouble().clamp(0, 10);
                   final String iconPath = p['iconPath'] as String;
 
-                  final double cx = centerX(dayIdx);
+                  final double cx =
+                      sidePadding + (innerWidth / 7.0) * (dayIdx + 0.5);
                   final double cy =
-                      chartHeight - (level / 10.0) * chartHeight; // Y position
+                      chartHeight - (level / 10.0) * chartHeight + 20;
 
                   return TweenAnimationBuilder<double>(
                     key: ValueKey('pt-$iconPath-$dayIdx-$level'),
@@ -399,7 +403,7 @@ class _MoodState extends State<Mood> {
                     duration: const Duration(milliseconds: 700),
                     curve: Curves.easeOutCubic,
                     builder: (context, t, _) {
-                      final y = lerpDouble(chartHeight + 32, cy, t)!;
+                      final y = lerpDouble(chartHeight + 60, cy, t)!;
                       return Positioned(
                         left: cx - 14,
                         top: y - 14,
@@ -410,7 +414,7 @@ class _MoodState extends State<Mood> {
                             width: 28,
                             height: 28,
                             colorFilter: const ColorFilter.mode(
-                              Color(0xFFFFD54F), // soft golden yellow
+                              Color(0xFFFFD54F),
                               BlendMode.srcIn,
                             ),
                           ),
@@ -420,12 +424,12 @@ class _MoodState extends State<Mood> {
                   );
                 }),
 
-                // 🗓 Weekday labels (same 7 columns)
+                // 🗓 Weekday labels stay the same
                 ...List.generate(7, (i) {
                   return Positioned(
-                    left: sidePadding + cellWidth * i,
-                    bottom: 2,
-                    width: cellWidth,
+                    left: sidePadding + (innerWidth / 7.0) * i,
+                    bottom: 6,
+                    width: innerWidth / 7.0,
                     child: Center(
                       child: Text(
                         DateFormat('E').format(weekDays[i]),
@@ -433,8 +437,6 @@ class _MoodState extends State<Mood> {
                           color: Colors.white70,
                           fontSize: 12,
                         ),
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   );
@@ -525,19 +527,61 @@ class _MoodState extends State<Mood> {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 4),
-                  child: Text(
-                    'Mood Galaxy (Past Week)',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                const SizedBox(height: 16),
+                Center(
+                  child: Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 🏷️ Title area ABOVE the galaxy
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            20,
+                            20,
+                            20,
+                            4,
+                          ), // was 8
+                          child: Text(
+                            'Mood Galaxy (Past Week)',
+                            style: GoogleFonts.fredoka(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: const Color.fromRGBO(47, 76, 45, 1),
+                            ),
+                          ),
+                        ),
+
+                        // 🌌 Actual galaxy section
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            left: 8,
+                            right: 8,
+                            bottom: 0,
+                          ),
+                          child: _weekCanvas(
+                            points: points,
+                            weekDays: weekDays,
+                            height: 220,
+                            padding: const EdgeInsets.fromLTRB(16, -25, 16, -25),
+                            showStars: true,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                _weekCanvas(
-                  points: points,
-                  weekDays: weekDays,
-                  height: 220,
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  showStars: true,
                 ),
               ],
             );
@@ -709,44 +753,119 @@ class _MoodState extends State<Mood> {
         ),
       ),
       child: Scaffold(
-        backgroundColor: const Color(0xFFDBF9E6),
+        backgroundColor: const Color.fromARGB(255, 217, 251, 229),
         body: SafeArea(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('moods')
-                .where('userId', isEqualTo: user!.uid)
-                .snapshots(),
-            builder: (context, snap) {
-              if (!snap.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              final moods = snap.data!.docs;
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('moods')
+                  .where('userId', isEqualTo: user!.uid)
+                  .snapshots(),
+              builder: (context, snap) {
+                if (!snap.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-              return ListView(
-                children: [
-                  // Galaxy section
-                  _galaxySection(),
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(16, 8, 16, 4),
-                    child: Text(
-                      'Your Moods',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                final moods = snap.data!.docs;
+
+                return ListView(
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    const SizedBox(height: 30),
+
+                    // 🌟 Page title and stars
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "  Mood Tracker",
+                              style: GoogleFonts.fredoka(
+                                color: const Color.fromARGB(255, 235, 96, 57),
+                                fontSize: 40,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            Text(
+                              "    Track your emotional journey",
+                              style: GoogleFonts.fredoka(
+                                color: const Color.fromARGB(255, 235, 96, 57),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w100,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // ✨ Decorative stars
+                        Positioned(
+                          top: 30,
+                          left: 0,
+                          child: SvgPicture.asset(
+                            'assets/images/star.svg',
+                            color: const Color.fromARGB(255, 236, 165, 84),
+                            width: 30,
+                            height: 30,
+                          ),
+                        ),
+                        Positioned(
+                          top: 5,
+                          right: 70,
+                          child: SvgPicture.asset(
+                            'assets/images/star.svg',
+                            color: const Color.fromARGB(255, 236, 165, 84),
+                            width: 20,
+                            height: 20,
+                          ),
+                        ),
+                        Positioned(
+                          top: 25,
+                          right: 10,
+                          child: SvgPicture.asset(
+                            'assets/images/star.svg',
+                            color: const Color.fromARGB(255, 236, 165, 84),
+                            width: 25,
+                            height: 25,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    // 🌌 Mood Galaxy
+                    _galaxySection(),
+
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8, bottom: 4),
+                      child: Text(
+                        'Your Moods',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  ),
-                  if (moods.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('No moods yet. Tap + to add one!'),
-                    )
-                  else
-                    ...moods.map(_buildMoodCard),
-                  const SizedBox(height: 24),
-                ],
-              );
-            },
+
+                    if (moods.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text(
+                          'No moods yet. Tap + to add one!',
+                          style: TextStyle(fontSize: 15, color: Colors.grey),
+                        ),
+                      )
+                    else
+                      ...moods.map(_buildMoodCard),
+
+                    const SizedBox(height: 24),
+                  ],
+                );
+              },
+            ),
           ),
         ),
         floatingActionButton: FloatingActionButton(

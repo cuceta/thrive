@@ -382,62 +382,57 @@ class _JournalState extends State<Journal> {
             children: [
               SizedBox(height: 50),
               // Title
-              // 🌟 Title + two random stars
-Stack(
-  clipBehavior: Clip.none,
-  children: [
-    // Column for the original text layout (unchanged)
-    Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "  Journal",
-          style: GoogleFonts.fredoka(
-            color: accentColor,
-            fontSize: 40,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        Text(
-          "    Reflect and grow through writing",
-          style: GoogleFonts.fredoka(
-            color: accentColor,
-            fontSize: 16,
-            fontWeight: FontWeight.w100,
-          ),
-        ),
-      ],
-    ),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // Column for the original text layout
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "  Journal",
+                        style: GoogleFonts.fredoka(
+                          color: accentColor,
+                          fontSize: 40,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        "    Reflect and grow through writing",
+                        style: GoogleFonts.fredoka(
+                          color: accentColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w100,
+                        ),
+                      ),
+                    ],
+                  ),
 
-    //  First random star (top right of “Journal”)
-    Positioned(
-      top: -10,
-      right: 233,
-      child:  
-      SvgPicture.asset(
-          'assets/images/star.svg',
-          color: const Color.fromARGB(255, 236, 165, 84),
-          width: 30,
-          height: 30,
-        
-      ),
-    ),
+                  //  First random star (top right of “Journal”)
+                  Positioned(
+                    top: -10,
+                    right: 233,
+                    child: SvgPicture.asset(
+                      'assets/images/star.svg',
+                      color: const Color.fromARGB(255, 236, 165, 84),
+                      width: 30,
+                      height: 30,
+                    ),
+                  ),
 
-    // Second random star (bottom left of subtitle)
-    Positioned(
-      bottom: 25,
-      left: 290,
-      child: 
-       SvgPicture.asset(
-          'assets/images/star.svg',
-          color: const Color.fromARGB(255, 236, 165, 84),
-          width: 20,
-          height: 20,
-        
-      ),
-    ),
-  ],
-),
+                  // Second random star (bottom left of subtitle)
+                  Positioned(
+                    bottom: 25,
+                    left: 290,
+                    child: SvgPicture.asset(
+                      'assets/images/star.svg',
+                      color: const Color.fromARGB(255, 236, 165, 84),
+                      width: 20,
+                      height: 20,
+                    ),
+                  ),
+                ],
+              ),
 
               const SizedBox(height: 40),
 
