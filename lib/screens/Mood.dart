@@ -751,7 +751,7 @@ class _MoodState extends State<Mood> {
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: _showAddMoodDialog,
-          backgroundColor: Colors.green.shade400,
+          backgroundColor: const Color.fromRGBO(47, 76, 45, 1),
           child: const Icon(Icons.add, color: Colors.white),
         ),
       ),
