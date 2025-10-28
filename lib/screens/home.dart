@@ -30,7 +30,7 @@ class _HomeState extends State<Home> {
 
   Future<void> _loadPrompts() async {
     final text = await rootBundle.loadString(
-      'assets/prompts/journal_prompts.txt',
+      'assets/journalPrompts/journal_prompts.txt',
     );
     setState(() {
       prompts = text

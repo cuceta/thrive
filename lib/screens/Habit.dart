@@ -89,7 +89,7 @@ class _HabitState extends State<Habit> {
 
               const SizedBox(height: 40),
 
-              // 🌿 Toggle bar (Daily / Weekly / Monthly)
+              // Toggle bar (Daily / Weekly / Monthly)
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(

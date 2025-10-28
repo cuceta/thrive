@@ -47,7 +47,7 @@ class _MoodState extends State<Mood> {
 
     final usedIcons =
         (await FirebaseFirestore.instance
-                .collection('moods')
+                .collection('users')
                 .where('userId', isEqualTo: user!.uid)
                 .get())
             .docs
@@ -159,7 +159,7 @@ class _MoodState extends State<Mood> {
                           setDialogState(() => isSaving = true);
                           try {
                             await FirebaseFirestore.instance
-                                .collection('moods')
+                                .collection('users')
                                 .add({
                                   'userId': user!.uid,
                                   'name': name,
@@ -254,9 +254,9 @@ class _MoodState extends State<Mood> {
                           setDialogState(() => isSaving = true);
                           try {
                             await FirebaseFirestore.instance
-                                .collection('moods')
+                                .collection('users')
                                 .doc(moodId)
-                                .collection('logs')
+                                .collection('moodlogs')
                                 .add({
                                   'level': v,
                                   'timestamp': FieldValue.serverTimestamp(),
@@ -295,8 +295,8 @@ class _MoodState extends State<Mood> {
 
   // ---------- DELETE MOOD ----------
   Future<void> _deleteMoodWithLogs(String moodId) async {
-    final moodRef = FirebaseFirestore.instance.collection('moods').doc(moodId);
-    final logsSnap = await moodRef.collection('logs').get();
+    final moodRef = FirebaseFirestore.instance.collection('users').doc(moodId);
+    final logsSnap = await moodRef.collection('moodlogs').get();
     final batch = FirebaseFirestore.instance.batch();
     for (final d in logsSnap.docs) {
       batch.delete(d.reference);
@@ -454,7 +454,7 @@ class _MoodState extends State<Mood> {
     final weekDays = _past7DaysEndingToday();
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('moods')
+          .collection('users')
           .where('userId', isEqualTo: user!.uid)
           .snapshots(),
       builder: (context, moodsSnap) {
@@ -474,9 +474,9 @@ class _MoodState extends State<Mood> {
           future: Future.wait(
             moods.map((m) {
               return FirebaseFirestore.instance
-                  .collection('moods')
+                  .collection('users')
                   .doc(m.id)
-                  .collection('logs')
+                  .collection('moodlogs')
                   .where(
                     'timestamp',
                     isGreaterThanOrEqualTo: Timestamp.fromDate(weekDays.first),
@@ -667,9 +667,9 @@ class _MoodState extends State<Mood> {
         children: [
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
-                .collection('moods')
+                .collection('users')
                 .doc(moodId)
-                .collection('logs')
+                .collection('moodlogs')
                 .where(
                   'timestamp',
                   isGreaterThanOrEqualTo: Timestamp.fromDate(weekDays.first),
@@ -759,7 +759,7 @@ class _MoodState extends State<Mood> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
-                  .collection('moods')
+                  .collection('users')
                   .where('userId', isEqualTo: user!.uid)
                   .snapshots(),
               builder: (context, snap) {
