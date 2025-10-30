@@ -238,7 +238,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                 ? 20
                 : count <= 8
                 ? 5
-                : -10;
+                : -15;
             final totalWidth = count * plantWidth + (count - 1) * spacing;
             final startX = (width - totalWidth) / 2;
 
@@ -435,7 +435,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                   ),
                 ),
 
-              const SizedBox(height: 25),
+              const SizedBox(height: 20),
 
               // 🌿 Today's Habits Summary
               StreamBuilder<QuerySnapshot>(
@@ -493,8 +493,9 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // 🌱 Summary container
                           Container(
-                            width: MediaQuery.of(context).size.width * 0.5,
+                            width: MediaQuery.of(context).size.width * 0.4,
                             height: 150,
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
@@ -537,10 +538,13 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                               ],
                             ),
                           ),
+
                           const SizedBox(height: 20),
+
+                          // 🌿 Today's Garden section with title + grey container
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.all(16),
+                            padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
@@ -548,8 +552,42 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                                 color: const Color.fromARGB(114, 79, 100, 78),
                                 width: 1,
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
-                            child: _todayGarden(habits),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Today's Garden",
+                                  style: GoogleFonts.fredoka(
+                                    color: primaryColor,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: const Color.fromARGB(
+                                      255,
+                                      233,
+                                      238,
+                                      235,
+                                    ), // light grey background
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: _todayGarden(habits),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       );
