@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -13,9 +14,12 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> {
+class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
   final Color primaryColor = const Color.fromRGBO(47, 76, 45, 1);
   final Color accentColor = const Color.fromARGB(255, 235, 96, 57);
+
+  AnimationController? _pulse;
+  Animation<double>? _pulseAnim;
 
   List<String> prompts = [];
   String currentPrompt = "";
@@ -26,8 +30,23 @@ class _HomeState extends State<Home> {
   void initState() {
     super.initState();
     _loadPrompts();
+
+    // Initialize safely
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+
+    _pulseAnim = CurvedAnimation(parent: _pulse!, curve: Curves.easeInOut);
   }
 
+  @override
+  void dispose() {
+    _pulse?.dispose();
+    super.dispose();
+  }
+
+  // -------------------- JOURNAL PROMPTS --------------------
   Future<void> _loadPrompts() async {
     final text = await rootBundle.loadString(
       'assets/prompts/journal_prompts.txt',
@@ -144,17 +163,6 @@ class _HomeState extends State<Home> {
           ),
           actions: [
             TextButton(
-              style: TextButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 236, 236, 236),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                side: BorderSide(color: primaryColor, width: 0.5),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
-                ),
-              ),
               onPressed: () => Navigator.pop(context),
               child: Text(
                 "Cancel",
@@ -166,10 +174,6 @@ class _HomeState extends State<Home> {
                 backgroundColor: primaryColor,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
                 ),
               ),
               onPressed: () async {
@@ -187,6 +191,121 @@ class _HomeState extends State<Home> {
     );
   }
 
+  // -------------------- TODAY GARDEN --------------------
+  Widget _todayGarden(List<DocumentSnapshot> habits) {
+    final today = DateTime.now();
+    final dayId = DateFormat('yyyy-MM-dd').format(today);
+
+    return FutureBuilder<Map<String, double>>(
+      future: () async {
+        final uid = FirebaseAuth.instance.currentUser!.uid;
+        final map = <String, double>{};
+        for (final h in habits) {
+          final doc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(uid)
+              .collection('habits')
+              .doc(h.id)
+              .collection('logs')
+              .doc(dayId)
+              .get();
+          map[h.id] = (doc.data()?['completion'] ?? 0.0).toDouble();
+        }
+        return map;
+      }(),
+      builder: (context, snapshot) {
+        final values = snapshot.data ?? {};
+        final random = Random(today.millisecondsSinceEpoch);
+        const plantWidth = 48.0;
+
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final count = habits.length;
+            if (count == 0) {
+              return Center(
+                child: Text(
+                  "No habits yet 🌱",
+                  style: GoogleFonts.fredoka(
+                    color: primaryColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              );
+            }
+
+            double spacing = count <= 5
+                ? 20
+                : count <= 8
+                ? 5
+                : -10;
+            final totalWidth = count * plantWidth + (count - 1) * spacing;
+            final startX = (width - totalWidth) / 2;
+
+            return SizedBox(
+              height: 120,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Container(
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: primaryColor,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ),
+                  for (int i = 0; i < count; i++)
+                    Builder(
+                      builder: (context) {
+                        final h = habits[i];
+                        final icon = h['iconPath'] as String;
+                        final val = values[h.id] ?? 0.0;
+                        final opacity = (0.1 + 0.9 * val).clamp(0.1, 1.0);
+                        final wobbleX = (random.nextDouble() - 0.5) * 4;
+                        final wobbleY = random.nextDouble() * 5;
+                        final left =
+                            startX + i * (plantWidth + spacing) + wobbleX;
+
+                        final plant = SvgPicture.asset(
+                          icon,
+                          width: plantWidth,
+                          height: plantWidth,
+                        );
+
+                        // 🔹 Animate only 100%-complete plants
+                        final animatedPlant = val == 1.0 && _pulseAnim != null
+                            ? ScaleTransition(
+                                scale: Tween(
+                                  begin: 1.0,
+                                  end: 1.06,
+                                ).animate(_pulseAnim!),
+                                child: plant,
+                              )
+                            : plant;
+
+                        return Positioned(
+                          bottom: 18 + wobbleY,
+                          left: left,
+                          child: Opacity(
+                            opacity: opacity,
+                            child: animatedPlant,
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // -------------------- BUILD --------------------
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -199,101 +318,30 @@ class _HomeState extends State<Home> {
       backgroundColor: const Color.fromARGB(255, 217, 251, 229),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding:  const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
           physics: const BouncingScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Hero image and stars (unchanged)
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Column(
-                    children: [
-                      Image.asset(
-                        'assets/images/joey.GIF',
-                        fit: BoxFit.cover,
-                        width: 370,
-                        height: 370,
-                      ),
-                      Center(
-                        child: Text(
-                          "Welcome back, $name!",
-                          style: GoogleFonts.fredoka(
-                            fontSize: 40,
-                            color: accentColor,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Positioned(
-                    top: 30,
-                    left: 10,
-                    child: SvgPicture.asset(
-                      'assets/images/star.svg',
-                      color: const Color.fromARGB(255, 236, 165, 84),
-                      width: 35,
-                      height: 35,
-                    ),
-                  ),
-                  Positioned(
-                    top: 25,
-                    left: -5,
-                    child: SvgPicture.asset(
-                      'assets/images/star.svg',
-                      color: const Color.fromARGB(255, 236, 165, 84),
-                      width: 15,
-                      height: 15,
-                    ),
-                  ),
-                  Positioned(
-                    top: 55,
-                    left: 5,
-                    child: SvgPicture.asset(
-                      'assets/images/star.svg',
-                      color: const Color.fromARGB(255, 236, 165, 84),
-                      width: 10,
-                      height: 10,
-                    ),
-                  ),
-                  Positioned(
-                    top: 120,
-                    right: -5,
-                    child: SvgPicture.asset(
-                      'assets/images/star.svg',
-                      color: const Color.fromARGB(255, 236, 165, 84),
-                      width: 35,
-                      height: 35,
-                    ),
-                  ),
-                  Positioned(
-                    top: 120,
-                    right: 30,
-                    child: SvgPicture.asset(
-                      'assets/images/star.svg',
-                      color: const Color.fromARGB(255, 236, 165, 84),
-                      width: 15,
-                      height: 15,
-                    ),
-                  ),
-                  Positioned(
-                    top: 145,
-                    right: 25,
-                    child: SvgPicture.asset(
-                      'assets/images/star.svg',
-                      color: const Color.fromARGB(255, 236, 165, 84),
-                      width: 10,
-                      height: 10,
-                    ),
-                  ),
-                ],
+              // 🌟 Header
+              Image.asset(
+                'assets/images/joey.GIF',
+                fit: BoxFit.cover,
+                width: 370,
+                height: 370,
+              ),
+              Text(
+                "Welcome Back, $name!",
+                style: GoogleFonts.fredoka(
+                  fontSize: 40,
+                  color: accentColor,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 30),
 
-              // Prompt section (scrollable-safe now)
+              // 🪶 Journal Prompt
               if (currentPrompt.isNotEmpty)
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -331,21 +379,6 @@ class _HomeState extends State<Home> {
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: _loadRandomPrompt,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color.fromARGB(
-                                  255,
-                                  233,
-                                  238,
-                                  235,
-                                ),
-                                side: const BorderSide(
-                                  color: Color.fromARGB(255, 181, 200, 189),
-                                  width: 0.5,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                              ),
                               icon: SvgPicture.asset(
                                 'assets/journal/reload.svg',
                                 color: primaryColor,
@@ -356,12 +389,6 @@ class _HomeState extends State<Home> {
                                 "New Prompt",
                                 style: GoogleFonts.fredoka(color: primaryColor),
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _showEntryDialog,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color.fromARGB(
                                   255,
@@ -369,14 +396,16 @@ class _HomeState extends State<Home> {
                                   238,
                                   235,
                                 ),
-                                side: const BorderSide(
-                                  color: Color.fromARGB(255, 181, 200, 189),
-                                  width: 0.5,
-                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                               ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _showEntryDialog,
                               icon: SvgPicture.asset(
                                 'assets/journal/pencil.svg',
                                 color: primaryColor,
@@ -387,6 +416,17 @@ class _HomeState extends State<Home> {
                                 "Answer",
                                 style: GoogleFonts.fredoka(color: primaryColor),
                               ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color.fromARGB(
+                                  255,
+                                  233,
+                                  238,
+                                  235,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -394,6 +434,129 @@ class _HomeState extends State<Home> {
                     ],
                   ),
                 ),
+
+              const SizedBox(height: 25),
+
+              // 🌿 Today's Habits Summary
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(FirebaseAuth.instance.currentUser!.uid)
+                    .collection('habits')
+                    .snapshots(),
+                builder: (context, habitsSnap) {
+                  if (!habitsSnap.hasData) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  final habits = habitsSnap.data!.docs;
+                  if (habits.isEmpty) return const SizedBox();
+
+                  final todayId = DateFormat(
+                    'yyyy-MM-dd',
+                  ).format(DateTime.now());
+
+                  return FutureBuilder<List<DocumentSnapshot>>(
+                    future: Future.wait(
+                      habits.map((h) async {
+                        final logRef = FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(FirebaseAuth.instance.currentUser!.uid)
+                            .collection('habits')
+                            .doc(h.id)
+                            .collection('logs')
+                            .doc(todayId)
+                            .get();
+                        return logRef;
+                      }),
+                    ),
+                    builder: (context, logSnaps) {
+                      if (!logSnaps.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      final completed = logSnaps.data!
+                          .where(
+                            (d) =>
+                                d.exists &&
+                                ((d.data()
+                                            as Map<
+                                              String,
+                                              dynamic
+                                            >?)?['completion'] ??
+                                        0) ==
+                                    1.0,
+                          )
+                          .length;
+                      final total = habits.length;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: MediaQuery.of(context).size.width * 0.5,
+                            height: 150,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color.fromARGB(255, 181, 209, 192),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color.fromARGB(114, 79, 100, 78),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Today's Habits:",
+                                  style: GoogleFonts.fredoka(
+                                    color: primaryColor,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                Text(
+                                  "$completed / $total",
+                                  style: GoogleFonts.fredoka(
+                                    color: primaryColor,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  "Grow your garden by checking off habits",
+                                  style: GoogleFonts.fredoka(
+                                    fontSize: 13,
+                                    color: primaryColor,
+                                    fontWeight: FontWeight.w300,
+                                  ),
+                                ),
+                                const Spacer(),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: const Color.fromARGB(114, 79, 100, 78),
+                                width: 1,
+                              ),
+                            ),
+                            child: _todayGarden(habits),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
             ],
           ),
         ),
