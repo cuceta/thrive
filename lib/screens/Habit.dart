@@ -13,12 +13,31 @@ class Habit extends StatefulWidget {
   State<Habit> createState() => _HabitState();
 }
 
-class _HabitState extends State<Habit> {
+class _HabitState extends State<Habit> with SingleTickerProviderStateMixin {
   final Color primaryColor = const Color.fromRGBO(47, 76, 45, 1);
   final Color accentColor = const Color.fromARGB(255, 235, 96, 57);
   String selectedView = "Daily";
   int _weekOffset = 0;
 
+  late final AnimationController _pulse;
+  late final Animation<double> _pulseAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 6), // slow & calm
+    )..repeat();
+
+    _pulseAnim = CurvedAnimation(parent: _pulse, curve: Curves.easeInOut);
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
   // ---------- HELPERS ----------
   DateTime _startOfWeek(DateTime d) {
     final dow = d.weekday % 7; // Sunday=0
@@ -524,143 +543,161 @@ class _HabitState extends State<Habit> {
   }
 
   Widget _gardenShelf({
-  required DateTime day,
-  required List<DocumentSnapshot> habits,
-}) {
-  return FutureBuilder<Map<String, double>>(
-    future: () async {
-      final map = <String, double>{};
-      for (final h in habits) {
-        final v = await _getCompletionForDate(h.id, day);
-        map[h.id] = (v ?? 0.0);
-      }
-      return map;
-    }(),
-    builder: (context, snapshot) {
-      final values = snapshot.data ?? {};
-      final random = Random(day.millisecondsSinceEpoch);
+    required DateTime day,
+    required List<DocumentSnapshot> habits,
+  }) {
+    return FutureBuilder<Map<String, double>>(
+      future: () async {
+        final map = <String, double>{};
+        for (final h in habits) {
+          final v = await _getCompletionForDate(h.id, day);
+          map[h.id] = (v ?? 0.0);
+        }
+        return map;
+      }(),
+      builder: (context, snapshot) {
+        final values = snapshot.data ?? {};
+        final random = Random(day.millisecondsSinceEpoch);
 
-      return Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              DateFormat('EEE, MMM d').format(day),
-              style: GoogleFonts.fredoka(
-                fontSize: 15,
-                color: primaryColor,
-                fontWeight: FontWeight.w700,
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                DateFormat('EEE, MMM d').format(day),
+                style: GoogleFonts.fredoka(
+                  fontSize: 15,
+                  color: primaryColor,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
+              const SizedBox(height: 10),
 
-            // 🌿 Garden shelf container
-            Container(
-              height: 140,
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final width = constraints.maxWidth;
-                  const plantWidth = 50.0;
+              // 🌿 Garden shelf container
+              Container(
+                height: 140,
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final width = constraints.maxWidth;
+                    const plantWidth = 50.0;
 
-                  final count = habits.length;
-                  if (count == 0) return const SizedBox();
+                    final count = habits.length;
+                    if (count == 0) return const SizedBox();
 
-                  // 🌼 Overlapping logic
-                  // For larger counts, spacing gets smaller and can go negative.
-                  double spacing;
-                  if (count <= 5) {
-                    spacing = 20.0;
-                  } else if (count <= 8) {
-                    spacing = -10.0;
-                  } else if (count <= 12) {
-                    spacing = -15.0; // start overlapping
-                  } else {
-                    spacing = -20.0; // stronger overlap for very dense gardens
-                  }
+                    // 🌼 Overlapping logic
+                    // For larger counts, spacing gets smaller and can go negative.
+                    double spacing;
+                    if (count <= 5) {
+                      spacing = 20.0;
+                    } else if (count <= 8) {
+                      spacing = -10.0;
+                    } else if (count <= 12) {
+                      spacing = -15.0; // start overlapping
+                    } else {
+                      spacing =
+                          -20.0; // stronger overlap for very dense gardens
+                    }
 
-                  // Compute total occupied width
-                  final totalWidth =
-                      count * plantWidth + (count - 1) * spacing;
-                  final startX = (width - totalWidth) / 2;
+                    // Compute total occupied width
+                    final totalWidth =
+                        count * plantWidth + (count - 1) * spacing;
+                    final startX = (width - totalWidth) / 2;
 
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      // 🌱 Shelf line
-                      Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Container(
-                          height: 18,
-                          decoration: BoxDecoration(
-                            color: primaryColor,
-                            borderRadius: BorderRadius.circular(6),
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        // 🌱 Shelf line
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Container(
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: primaryColor,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
                           ),
                         ),
-                      ),
 
-                      // 🌸 Plants
-                      for (int i = 0; i < count; i++)
-                        Builder(builder: (context) {
-                          final h = habits[i];
-                          final icon = h['iconPath'] as String;
-                          final val = values[h.id] ?? 0.0;
-                          final opacity = (0.1 + 0.9 * val).clamp(0.1, 1.0);
+                        // 🌸 Plants
+                        for (int i = 0; i < count; i++)
+                          Builder(
+                            builder: (context) {
+                              final h = habits[i];
+                              final icon = h['iconPath'] as String;
+                              final val = values[h.id] ?? 0.0;
+                              final opacity = (0.1 + 0.9 * val).clamp(0.1, 1.0);
 
-                          final wobbleX = (random.nextDouble() - 0.5) * 6;
-                          final wobbleY = random.nextDouble() * 5;
+                              final wobbleX = (random.nextDouble() - 0.5) * 6;
+                              final wobbleY = random.nextDouble() * 5;
 
-                          final left = startX + i * (plantWidth + spacing) + wobbleX;
+                              final left =
+                                  startX + i * (plantWidth + spacing) + wobbleX;
 
-                          return Positioned(
-                            bottom: 18 + wobbleY,
-                            left: left,
-                            child: Opacity(
-                              opacity: opacity,
-                              child: SvgPicture.asset(
-                                icon,
-                                width: plantWidth,
-                                height: plantWidth,
-                              ),
-                            ),
-                          );
-                        }),
-                    ],
-                  );
-                },
+                              return Positioned(
+                                bottom: 18 + wobbleY,
+                                left: left,
+                                child: Opacity(
+  opacity: opacity,
+  child: val == 1.0
+      ? AnimatedBuilder(
+          animation: _pulseAnim,
+          builder: (context, child) {
+            final t = (_pulseAnim.value + i * 0.2) % 1.0;
+            final scale = 1.0 + 0.06 * sin(t * pi); // gentle pulse
+            return Transform.scale(scale: scale, child: child);
+          },
+          child: SvgPicture.asset(
+            icon,
+            width: plantWidth,
+            height: plantWidth,
+          ),
+        )
+      : SvgPicture.asset(
+          icon,
+          width: plantWidth,
+          height: plantWidth,
+        ),
+),
+
+                              );
+                            },
+                          ),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
 
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => _showLogDialogForDate(day),
-                child: Text(
-                  'Log Habit',
-                  style: GoogleFonts.fredoka(
-                    color: accentColor,
-                    fontWeight: FontWeight.w600,
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () => _showLogDialogForDate(day),
+                  child: Text(
+                    'Log Habit',
+                    style: GoogleFonts.fredoka(
+                      color: accentColor,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   Widget _dailyView(List<DocumentSnapshot> habits) {
     final today = DateTime.now();
