@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -22,6 +23,26 @@ class Mood extends StatefulWidget {
   State<Mood> createState() => _MoodState();
 }
 
+class _YellowStarsPainter extends CustomPainter {
+  final Random rand = Random(42);
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint();
+    for (int i = 0; i < 25; i++) {
+      paint.color = const Color(
+        0xFFFFD54F,
+      ).withOpacity(0.6 + rand.nextDouble() * 0.3);
+      final dx = rand.nextDouble() * size.width;
+      final dy = rand.nextDouble() * size.height;
+      final radius = 1.0 + rand.nextDouble() * 1.5;
+      canvas.drawCircle(Offset(dx, dy), radius, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 class _MoodState extends State<Mood> {
   final TextStyle moodTextStyle = GoogleFonts.fredoka(
     color: const Color.fromRGBO(47, 76, 45, 1),
@@ -36,9 +57,6 @@ class _MoodState extends State<Mood> {
     final today = DateTime(now.year, now.month, now.day);
     return List.generate(7, (i) => today.subtract(Duration(days: 6 - i)));
   }
-
-  Color _nightTop = const Color(0xFF0a0e27);
-  Color _nightBottom = const Color(0xFF30125b);
 
   // ---------- ADD MOOD ----------
   Future<void> _showAddMoodDialog() async {
@@ -305,22 +323,6 @@ class _MoodState extends State<Mood> {
     await batch.commit();
   }
 
-  // ---------- DRAW: average path (simple smoothing) ----------
-  Path _buildAveragePath(List<Offset> pts) {
-    final path = Path();
-    if (pts.isEmpty) return path;
-    path.moveTo(pts.first.dx, pts.first.dy);
-    for (int i = 1; i < pts.length; i++) {
-      final p0 = pts[i - 1];
-      final p1 = pts[i];
-      // simple quadratic curve between points
-      final mid = Offset((p0.dx + p1.dx) / 2, (p0.dy + p1.dy) / 2);
-      path.quadraticBezierTo(p0.dx, p0.dy, mid.dx, mid.dy);
-      path.quadraticBezierTo(p1.dx, p1.dy, p1.dx, p1.dy);
-    }
-    return path;
-  }
-
   // ---------- WIDGET: animated icons over gradient, with white average curve ----------
   Widget _weekCanvas({
     required List<Map<String, dynamic>> points,
@@ -335,63 +337,44 @@ class _MoodState extends State<Mood> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final containerWidth = constraints.maxWidth;
-
-        // Chart should take up about 86% of the available width and stay centered
         final innerWidth = containerWidth * 0.86;
         final sidePadding = (containerWidth - innerWidth) / 2;
-        final cellWidth = innerWidth / 7.0; // one column per weekday
         final labelArea = 22.0;
         final chartHeight = height - labelArea;
 
-        // Helper to find X-center of each day
-        double centerX(int dayIdx) => sidePadding + cellWidth * (dayIdx + 0.5);
-
         return Center(
           child: Container(
-            // Increased total height for more space around title and stars
-            height: height + 100,
+            height: height + 60,
             width: containerWidth,
             margin: EdgeInsets.only(
-              top: padding.top + 30,
-              bottom: padding.bottom + 30,
+              top: (padding.top + 10).clamp(0.0, double.infinity),
+              bottom: (padding.bottom + 10).clamp(0.0, double.infinity),
             ),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 6,
-                  offset: const Offset(0, 3),
-                ),
-              ],
+              color: const Color.fromARGB(
+                255,
+                233,
+                238,
+                235,
+              ), // 🌫 grey inner box
+              borderRadius: BorderRadius.circular(16),
             ),
             clipBehavior: Clip.antiAlias,
             child: Stack(
               children: [
-                // 🌌 Slightly larger inner gradient box
-                Positioned(
-                  left: 10,
-                  right: 10,
-                  top: 10,
-                  bottom: 10,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [_nightTop, _nightBottom],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
+                if (showStars)
+                  Positioned.fill(
+                    child: CustomPaint(
+                      painter:
+                          _YellowStarsPainter(), // yellow twinkling stars 🌟
                     ),
                   ),
-                ),
-                if (showStars) _TinyStarsLayer(),
+
+                //  Mood icons on top
                 ...points.map((p) {
                   final int dayIdx = p['x'] as int;
                   final double level = (p['y'] as num).toDouble().clamp(0, 10);
                   final String iconPath = p['iconPath'] as String;
-
                   final double cx =
                       sidePadding + (innerWidth / 7.0) * (dayIdx + 0.5);
                   final double cy =
@@ -414,7 +397,7 @@ class _MoodState extends State<Mood> {
                             width: 28,
                             height: 28,
                             colorFilter: const ColorFilter.mode(
-                              Color(0xFFFFD54F),
+                              Color(0xFFFFD54F), // yellow star icons
                               BlendMode.srcIn,
                             ),
                           ),
@@ -424,7 +407,7 @@ class _MoodState extends State<Mood> {
                   );
                 }),
 
-                // 🗓 Weekday labels stay the same
+                //  Weekday labels
                 ...List.generate(7, (i) {
                   return Positioned(
                     left: sidePadding + (innerWidth / 7.0) * i,
@@ -434,7 +417,7 @@ class _MoodState extends State<Mood> {
                       child: Text(
                         DateFormat('E').format(weekDays[i]),
                         style: const TextStyle(
-                          color: Colors.white70,
+                          color: Color.fromRGBO(47, 76, 45, 1),
                           fontSize: 12,
                         ),
                       ),
@@ -569,13 +552,18 @@ class _MoodState extends State<Mood> {
                           padding: const EdgeInsets.only(
                             left: 8,
                             right: 8,
-                            bottom: 0,
+                            bottom: 8,
                           ),
                           child: _weekCanvas(
                             points: points,
                             weekDays: weekDays,
                             height: 220,
-                            padding: const EdgeInsets.fromLTRB(16, -25, 16, -25),
+                            padding: const EdgeInsets.fromLTRB(
+                              16,
+                              -25,
+                              16,
+                              -25,
+                            ),
                             showStars: true,
                           ),
                         ),
@@ -599,10 +587,12 @@ class _MoodState extends State<Mood> {
     final weekDays = _past7DaysEndingToday();
 
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 0),
       color: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ExpansionTile(
+        shape: const Border(), // removes the default border line
+        collapsedShape: const Border(), // removes the line when collapsed too
         leading: SvgPicture.asset(
           iconPath,
           width: 36,
@@ -716,13 +706,17 @@ class _MoodState extends State<Mood> {
                 );
               }
 
-              return _weekCanvas(
-                points: points,
-                weekDays: weekDays,
-                height: 220,
-
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                showStars: true, // cleaner in cards
+              return Padding(
+                padding: const EdgeInsets.all(
+                  12.0,
+                ), // 🧠 Adds space between white & grey
+                child: _weekCanvas(
+                  points: points,
+                  weekDays: weekDays,
+                  height: 220,
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  showStars: true,
+                ),
               );
             },
           ),
