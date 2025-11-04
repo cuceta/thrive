@@ -8,7 +8,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 class Home extends StatefulWidget {
-  const Home({super.key});
+  final void Function(int)? onNavigateToTab; // <— add this
+
+  const Home({super.key, this.onNavigateToTab}); 
 
   @override
   State<Home> createState() => _HomeState();
@@ -275,7 +277,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                           height: plantWidth,
                         );
 
-                        // 🔹 Animate only 100%-complete plants
+                        //  Animate only 100%-complete plants
                         final animatedPlant = val == 1.0 && _pulseAnim != null
                             ? ScaleTransition(
                                 scale: Tween(
@@ -408,11 +410,10 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                   ),
                 ],
               ),
-        
 
               const SizedBox(height: 30),
 
-              // 🪶 Journal Prompt
+              //  Journal Prompt
               if (currentPrompt.isNotEmpty)
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -508,7 +509,7 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
 
               const SizedBox(height: 20),
 
-              // 🌿 Today's Habits Summary
+              // Today's Habits Summary
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('users')
@@ -564,55 +565,111 @@ class _HomeState extends State<Home> with SingleTickerProviderStateMixin {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // 🌱 Summary container
-                          Container(
-                            width: MediaQuery.of(context).size.width * 0.4,
-                            height: 150,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 181, 209, 192),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: const Color.fromARGB(114, 79, 100, 78),
-                                width: 1,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Today's Habits:",
-                                  style: GoogleFonts.fredoka(
-                                    color: primaryColor,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                Text(
-                                  "$completed / $total",
-                                  style: GoogleFonts.fredoka(
-                                    color: primaryColor,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  "Grow your garden by checking off habits",
-                                  style: GoogleFonts.fredoka(
-                                    fontSize: 13,
-                                    color: primaryColor,
-                                    fontWeight: FontWeight.w300,
-                                  ),
-                                ),
-                                const Spacer(),
-                              ],
-                            ),
-                          ),
+                          // Summary container
+                          Row(
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    // Today's Habits card (clickable)
+    Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => widget.onNavigateToTab?.call(1), // Habit tab
+        child: Container(
+          height: 150,
+          margin: const EdgeInsets.only(right: 10),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255, 181, 209, 192),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color.fromARGB(114, 79, 100, 78),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Today's Habits:",
+                style: GoogleFonts.fredoka(
+                  color: primaryColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                "$completed / $total",
+                style: GoogleFonts.fredoka(
+                  color: primaryColor,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                "Grow your garden by checking off habits",
+                style: GoogleFonts.fredoka(
+                  fontSize: 13,
+                  color: primaryColor,
+                  fontWeight: FontWeight.w300,
+                ),
+              ),
+              const Spacer(),
+            ],
+          ),
+        ),
+      ),
+    ),
+
+    // Moods card (clickable)
+    Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => widget.onNavigateToTab?.call(2), // Mood tab
+        child: Container(
+          height: 150,
+          margin: const EdgeInsets.only(left: 10),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color.fromARGB(255, 181, 209, 192),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color.fromARGB(114, 79, 100, 78),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Moods",
+                style: GoogleFonts.fredoka(
+                  color: primaryColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                "Log your mood to create your star constellations",
+                style: GoogleFonts.fredoka(
+                  fontSize: 13,
+                  color: primaryColor,
+                  fontWeight: FontWeight.w300,
+                ),
+              ),
+              const Spacer(),
+            ],
+          ),
+        ),
+      ),
+    ),
+  ],
+),
 
                           const SizedBox(height: 20),
 
-                          // 🌿 Today's Garden section with title + grey container
+                          //  Today's Garden section with title + grey container
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(20),

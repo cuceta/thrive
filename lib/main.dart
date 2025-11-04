@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:thrive/screens/Habit.dart';
 import 'package:thrive/screens/home_screen.dart';
 import 'package:thrive/screens/login_screen.dart';
 import 'package:thrive/screens/register_screen.dart';
@@ -42,7 +43,8 @@ class MyApp extends StatelessWidget {
         '/login': (context) => LoginScreen(),
         '/register': (context) => RegisterScreen(),
         '/home': (context) => HomeScreen(),
-        '/mood': (context) => const Mood(),
+        '/mood': (context) => Mood(),
+        '/habit': (context) => Habit(),
       },
     );
   }
