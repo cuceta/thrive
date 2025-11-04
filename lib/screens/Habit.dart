@@ -579,7 +579,7 @@ class _HabitState extends State<Habit> with SingleTickerProviderStateMixin {
               ),
               const SizedBox(height: 10),
 
-              // 🌿 Garden shelf container
+              // Garden shelf container
               Container(
                 height: 140,
                 decoration: BoxDecoration(
@@ -594,7 +594,7 @@ class _HabitState extends State<Habit> with SingleTickerProviderStateMixin {
                     final count = habits.length;
                     if (count == 0) return const SizedBox();
 
-                    // 🌼 Overlapping logic
+                    // Overlapping logic
                     // For larger counts, spacing gets smaller and can go negative.
                     double spacing;
                     if (count <= 5) {
@@ -622,7 +622,7 @@ class _HabitState extends State<Habit> with SingleTickerProviderStateMixin {
                           child: Container(
                             height: 18,
                             decoration: BoxDecoration(
-                              color: primaryColor,
+                              color: const Color.fromARGB(255, 116, 66, 42),
                               borderRadius: BorderRadius.circular(6),
                             ),
                           ),
