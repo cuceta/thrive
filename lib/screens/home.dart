@@ -414,7 +414,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                     child: Container(
                       height: 18,
                       decoration: BoxDecoration(
-                        color: primaryColor,
+                              color: const Color.fromARGB(255, 116, 66, 42),
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
@@ -477,15 +477,91 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 🪴 Hero section
-              Image.asset('assets/images/joey.GIF',
-                  fit: BoxFit.cover, width: 370, height: 370),
-              Text("Welcome back, $name!",
-                  style: GoogleFonts.fredoka(
-                    fontSize: 40,
-                    color: accentColor,
-                    fontWeight: FontWeight.w700,
-                  )),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Column(
+                    children: [
+                      Image.asset(
+                        'assets/images/joey.GIF',
+                        fit: BoxFit.cover,
+                        width: 370,
+                        height: 370,
+                      ),
+                      Center(
+                        child: Text(
+                          "Welcome back, $name!",
+                          style: GoogleFonts.fredoka(
+                            fontSize: 40,
+                            color: accentColor,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Positioned(
+                    top: 30,
+                    left: 10,
+                    child: SvgPicture.asset(
+                      'assets/images/star.svg',
+                      color: const Color.fromARGB(255, 236, 165, 84),
+                      width: 35,
+                      height: 35,
+                    ),
+                  ),
+                  Positioned(
+                    top: 25,
+                    left: -5,
+                    child: SvgPicture.asset(
+                      'assets/images/star.svg',
+                      color: const Color.fromARGB(255, 236, 165, 84),
+                      width: 15,
+                      height: 15,
+                    ),
+                  ),
+                  Positioned(
+                    top: 55,
+                    left: 5,
+                    child: SvgPicture.asset(
+                      'assets/images/star.svg',
+                      color: const Color.fromARGB(255, 236, 165, 84),
+                      width: 10,
+                      height: 10,
+                    ),
+                  ),
+                  Positioned(
+                    top: 120,
+                    right: -5,
+                    child: SvgPicture.asset(
+                      'assets/images/star.svg',
+                      color: const Color.fromARGB(255, 236, 165, 84),
+                      width: 35,
+                      height: 35,
+                    ),
+                  ),
+                  Positioned(
+                    top: 120,
+                    right: 30,
+                    child: SvgPicture.asset(
+                      'assets/images/star.svg',
+                      color: const Color.fromARGB(255, 236, 165, 84),
+                      width: 15,
+                      height: 15,
+                    ),
+                  ),
+                  Positioned(
+                    top: 145,
+                    right: 25,
+                    child: SvgPicture.asset(
+                      'assets/images/star.svg',
+                      color: const Color.fromARGB(255, 236, 165, 84),
+                      width: 10,
+                      height: 10,
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 30),
 
               // Journal Prompt
