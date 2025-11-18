@@ -66,12 +66,12 @@ class _MoodState extends State<Mood> {
     final usedIcons =
         (await FirebaseFirestore.instance
                 .collection('users')
-                .where('userId', isEqualTo: user!.uid)
+                .doc(user!.uid)
+                .collection('moods')
                 .get())
             .docs
             .map((d) => d['iconPath'] as String)
             .toSet();
-
     final unusedIcons = availableMoodIcons
         .where((p) => !usedIcons.contains(p))
         .toList();
@@ -144,7 +144,8 @@ class _MoodState extends State<Mood> {
                                 width: 56,
                                 height: 56,
                                 colorFilter: const ColorFilter.mode(
-                                  const Color.fromARGB(255, 235, 96, 57),
+                                  // const Color.fromARGB(255, 235, 96, 57),
+                                  Color(0xFFFFD54F),
                                   BlendMode.srcIn, // replaces the fill color
                                 ),
                               ),
@@ -178,13 +179,14 @@ class _MoodState extends State<Mood> {
                           try {
                             await FirebaseFirestore.instance
                                 .collection('users')
+                                .doc(user!.uid)
+                                .collection('moods')
                                 .add({
-                                  'userId': user!.uid,
                                   'name': name,
                                   'iconPath': selectedIcon,
                                   'createdAt': FieldValue.serverTimestamp(),
-                                })
-                                .timeout(const Duration(seconds: 12));
+                                });
+                                // .timeout(const Duration(seconds: 12));
                             if (mounted &&
                                 Navigator.of(dialogContext).canPop()) {
                               Navigator.of(dialogContext).pop();
@@ -267,29 +269,30 @@ class _MoodState extends State<Mood> {
                       ? null
                       : () async {
                           final v = int.tryParse(controller.text);
-                          if (v == null || v < 1 || v > 10)
+                          if (v == null || v < 1 || v > 10) {
                             return toast('Enter a number 1–10.');
+                          }
+
                           setDialogState(() => isSaving = true);
-                          try {
-                            await FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(moodId)
-                                .collection('moodlogs')
-                                .add({
-                                  'level': v,
-                                  'timestamp': FieldValue.serverTimestamp(),
-                                })
-                                .timeout(const Duration(seconds: 12));
-                            if (mounted &&
-                                Navigator.of(dialogContext).canPop()) {
-                              Navigator.of(dialogContext).pop();
-                            }
-                          } on TimeoutException {
-                            setDialogState(() => isSaving = false);
-                            toast('Network timeout — try again.');
-                          } catch (e) {
-                            setDialogState(() => isSaving = false);
-                            toast('Error saving log: $e');
+
+                          final dateId = DateFormat(
+                            'yyyy-MM-dd',
+                          ).format(DateTime.now());
+
+                          await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(user!.uid)
+                              .collection('moods')
+                              .doc(moodId)
+                              .collection('logs')
+                              .doc(dateId)
+                              .set({
+                                'level': v,
+                                'timestamp': FieldValue.serverTimestamp(),
+                              });
+
+                          if (mounted && Navigator.of(dialogContext).canPop()) {
+                            Navigator.of(dialogContext).pop();
                           }
                         },
                   child: isSaving
@@ -313,13 +316,20 @@ class _MoodState extends State<Mood> {
 
   // ---------- DELETE MOOD ----------
   Future<void> _deleteMoodWithLogs(String moodId) async {
-    final moodRef = FirebaseFirestore.instance.collection('users').doc(moodId);
-    final logsSnap = await moodRef.collection('moodlogs').get();
+    final moodRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user!.uid)
+        .collection('moods')
+        .doc(moodId);
+
+    final logsSnap = await moodRef.collection('logs').get();
+
     final batch = FirebaseFirestore.instance.batch();
     for (final d in logsSnap.docs) {
       batch.delete(d.reference);
     }
     batch.delete(moodRef);
+
     await batch.commit();
   }
 
@@ -438,7 +448,9 @@ class _MoodState extends State<Mood> {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('users')
-          .where('userId', isEqualTo: user!.uid)
+          .doc(user!.uid)
+          .collection('moods')
+          .orderBy('createdAt')
           .snapshots(),
       builder: (context, moodsSnap) {
         if (!moodsSnap.hasData) {
@@ -458,8 +470,10 @@ class _MoodState extends State<Mood> {
             moods.map((m) {
               return FirebaseFirestore.instance
                   .collection('users')
+                  .doc(user!.uid)
+                  .collection('moods')
                   .doc(m.id)
-                  .collection('moodlogs')
+                  .collection('logs')
                   .where(
                     'timestamp',
                     isGreaterThanOrEqualTo: Timestamp.fromDate(weekDays.first),
@@ -597,7 +611,8 @@ class _MoodState extends State<Mood> {
           iconPath,
           width: 36,
           height: 36,
-          color: const Color.fromARGB(255, 235, 96, 57),
+          // color: const Color.fromARGB(255, 235, 96, 57),
+          color: Color(0xFFFFD54F),
         ),
         title: Text(name, style: moodTextStyle.copyWith(fontSize: 24)),
         trailing: PopupMenuButton<String>(
@@ -658,8 +673,10 @@ class _MoodState extends State<Mood> {
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('users')
+                .doc(user!.uid)
+                .collection('moods')
                 .doc(moodId)
-                .collection('moodlogs')
+                .collection('logs')
                 .where(
                   'timestamp',
                   isGreaterThanOrEqualTo: Timestamp.fromDate(weekDays.first),
@@ -709,7 +726,7 @@ class _MoodState extends State<Mood> {
               return Padding(
                 padding: const EdgeInsets.all(
                   12.0,
-                ), // 🧠 Adds space between white & grey
+                ), //  Adds space between white & grey
                 child: _weekCanvas(
                   points: points,
                   weekDays: weekDays,
@@ -754,7 +771,9 @@ class _MoodState extends State<Mood> {
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('users')
-                  .where('userId', isEqualTo: user!.uid)
+                  .doc(user!.uid)
+                  .collection('moods')
+                  .orderBy('createdAt')
                   .snapshots(),
               builder: (context, snap) {
                 if (!snap.hasData) {
@@ -768,7 +787,7 @@ class _MoodState extends State<Mood> {
                   children: [
                     const SizedBox(height: 30),
 
-                    // 🌟 Page title and stars
+                    // Page title and stars
                     Stack(
                       clipBehavior: Clip.none,
                       children: [

@@ -24,7 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // ✅ Pass the navigation callback to Home so it can switch tabs
+    // Pass the navigation callback to Home so it can switch tabs
     _pages = [
       Home(onNavigateToTab: _onNavTapped),
       Habit(),

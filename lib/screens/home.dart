@@ -20,12 +20,17 @@ class Home extends StatefulWidget {
 Widget _homeMoodGalaxy(Animation<double> animation) {
   final user = FirebaseAuth.instance.currentUser;
   final now = DateTime.now();
-  final past7Days = List.generate(7, (i) => now.subtract(Duration(days: 6 - i)));
+  final past7Days = List.generate(
+    7,
+    (i) => now.subtract(Duration(days: 6 - i)),
+  );
 
   return FutureBuilder<QuerySnapshot>(
     future: FirebaseFirestore.instance
         .collection('users')
-        .where('userId', isEqualTo: user!.uid)
+        .doc(user!.uid)
+        .collection('moods')
+        .orderBy('createdAt')
         .get(),
     builder: (context, moodsSnap) {
       if (!moodsSnap.hasData) {
@@ -49,8 +54,10 @@ Widget _homeMoodGalaxy(Animation<double> animation) {
           moods.map((m) {
             return FirebaseFirestore.instance
                 .collection('users')
+                .doc(user!.uid)
+                .collection('moods')
                 .doc(m.id)
-                .collection('moodlogs')
+                .collection('logs')
                 .where(
                   'timestamp',
                   isGreaterThanOrEqualTo: Timestamp.fromDate(past7Days.first),
@@ -80,7 +87,8 @@ Widget _homeMoodGalaxy(Animation<double> animation) {
               }).toList();
 
               if (dayLogs.isEmpty) continue;
-              final avg = dayLogs
+              final avg =
+                  dayLogs
                       .map((d) => (d['level'] as num).toDouble())
                       .reduce((a, b) => a + b) /
                   dayLogs.length;
@@ -106,7 +114,9 @@ Widget _homeMoodGalaxy(Animation<double> animation) {
                         animation: animation,
                         builder: (context, _) {
                           return CustomPaint(
-                            painter: _YellowStarsPainter(offset: animation.value),
+                            painter: _YellowStarsPainter(
+                              offset: animation.value,
+                            ),
                           );
                         },
                       ),
@@ -166,14 +176,16 @@ class _YellowStarsPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint();
     for (int i = 0; i < 25; i++) {
-      paint.color =
-          const Color(0xFFFFD54F).withOpacity(0.6 + rand.nextDouble() * 0.3);
+      paint.color = const Color(
+        0xFFFFD54F,
+      ).withOpacity(0.6 + rand.nextDouble() * 0.3);
       final dx =
           (rand.nextDouble() * size.width + offset * 40 * (i.isEven ? 1 : -1)) %
-              size.width;
+          size.width;
       final dy =
-          (rand.nextDouble() * size.height + offset * 25 * (i % 3 == 0 ? 1 : -1)) %
-              size.height;
+          (rand.nextDouble() * size.height +
+              offset * 25 * (i % 3 == 0 ? 1 : -1)) %
+          size.height;
       final radius = 0.8 + rand.nextDouble() * 1.2;
       canvas.drawCircle(Offset(dx, dy), radius, paint);
     }
@@ -226,10 +238,14 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
 
   // ---- Prompts ----
   Future<void> _loadPrompts() async {
-    final text = await rootBundle.loadString('assets/prompts/journal_prompts.txt');
+    final text = await rootBundle.loadString(
+      'assets/prompts/journal_prompts.txt',
+    );
     setState(() {
-      prompts =
-          text.split('\n').where((line) => line.trim().isNotEmpty).toList();
+      prompts = text
+          .split('\n')
+          .where((line) => line.trim().isNotEmpty)
+          .toList();
       _loadRandomPrompt();
     });
   }
@@ -250,10 +266,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
         .doc(user.uid)
         .collection('journalEntries')
         .add({
-      'prompt': currentPrompt,
-      'answer': userAnswer.trim(),
-      'timestamp': Timestamp.now(),
-    });
+          'prompt': currentPrompt,
+          'answer': userAnswer.trim(),
+          'timestamp': Timestamp.now(),
+        });
 
     setState(() {
       userAnswer = "";
@@ -311,8 +327,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            const BorderSide(color: Colors.grey, width: 1.5),
+                        borderSide: const BorderSide(
+                          color: Colors.grey,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                     style: GoogleFonts.fredoka(fontSize: 14),
@@ -335,20 +353,26 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text("Cancel", style: GoogleFonts.fredoka(color: primaryColor)),
+              child: Text(
+                "Cancel",
+                style: GoogleFonts.fredoka(color: primaryColor),
+              ),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryColor,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10)),
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               onPressed: () async {
                 await _saveEntry();
                 Navigator.pop(context);
               },
-              child:
-                  Text("Save Entry", style: GoogleFonts.fredoka(color: Colors.white)),
+              child: Text(
+                "Save Entry",
+                style: GoogleFonts.fredoka(color: Colors.white),
+              ),
             ),
           ],
         );
@@ -388,19 +412,21 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
             final count = habits.length;
             if (count == 0) {
               return Center(
-                child: Text("No habits yet 🌱",
-                    style: GoogleFonts.fredoka(
-                      color: primaryColor,
-                      fontWeight: FontWeight.w500,
-                    )),
+                child: Text(
+                  "No habits yet 🌱",
+                  style: GoogleFonts.fredoka(
+                    color: primaryColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               );
             }
 
             double spacing = count <= 5
                 ? 20
                 : count <= 8
-                    ? 5
-                    : -15;
+                ? 5
+                : -15;
             final totalWidth = count * plantWidth + (count - 1) * spacing;
             final startX = (width - totalWidth) / 2;
 
@@ -414,7 +440,7 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                     child: Container(
                       height: 18,
                       decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 116, 66, 42),
+                        color: const Color.fromARGB(255, 116, 66, 42),
                         borderRadius: BorderRadius.circular(6),
                       ),
                     ),
@@ -431,13 +457,18 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         final left =
                             startX + i * (plantWidth + spacing) + wobbleX;
 
-                        final plant = SvgPicture.asset(icon,
-                            width: plantWidth, height: plantWidth);
+                        final plant = SvgPicture.asset(
+                          icon,
+                          width: plantWidth,
+                          height: plantWidth,
+                        );
 
                         final animatedPlant = val == 1.0 && _pulseAnim != null
                             ? ScaleTransition(
-                                scale: Tween(begin: 1.0, end: 1.06)
-                                    .animate(_pulseAnim!),
+                                scale: Tween(
+                                  begin: 1.0,
+                                  end: 1.06,
+                                ).animate(_pulseAnim!),
                                 child: plant,
                               )
                             : plant;
@@ -445,8 +476,10 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                         return Positioned(
                           bottom: 18 + wobbleY,
                           left: left,
-                          child:
-                              Opacity(opacity: opacity, child: animatedPlant),
+                          child: Opacity(
+                            opacity: opacity,
+                            child: animatedPlant,
+                          ),
                         );
                       },
                     ),
@@ -573,37 +606,55 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                     color: const Color.fromARGB(255, 181, 209, 192),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                        color: const Color.fromARGB(114, 79, 100, 78), width: 1),
+                      color: const Color.fromARGB(114, 79, 100, 78),
+                      width: 1,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text("Tell me about it...",
-                          style: GoogleFonts.fredoka(
-                              fontSize: 20,
-                              color: primaryColor,
-                              fontWeight: FontWeight.w500)),
-                      Text(currentPrompt,
-                          style: GoogleFonts.fredoka(
-                              fontSize: 16,
-                              color: primaryColor,
-                              fontWeight: FontWeight.w100)),
+                      Text(
+                        "Tell me about it...",
+                        style: GoogleFonts.fredoka(
+                          fontSize: 20,
+                          color: primaryColor,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        currentPrompt,
+                        style: GoogleFonts.fredoka(
+                          fontSize: 16,
+                          color: primaryColor,
+                          fontWeight: FontWeight.w100,
+                        ),
+                      ),
                       const SizedBox(height: 30),
                       Row(
                         children: [
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: _loadRandomPrompt,
-                              icon: SvgPicture.asset('assets/journal/reload.svg',
-                                  color: primaryColor, width: 13, height: 13),
-                              label: Text("New Prompt",
-                                  style:
-                                      GoogleFonts.fredoka(color: primaryColor)),
+                              icon: SvgPicture.asset(
+                                'assets/journal/reload.svg',
+                                color: primaryColor,
+                                width: 13,
+                                height: 13,
+                              ),
+                              label: Text(
+                                "New Prompt",
+                                style: GoogleFonts.fredoka(color: primaryColor),
+                              ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    const Color.fromARGB(255, 233, 238, 235),
+                                backgroundColor: const Color.fromARGB(
+                                  255,
+                                  233,
+                                  238,
+                                  235,
+                                ),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                               ),
                             ),
                           ),
@@ -611,16 +662,26 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                           Expanded(
                             child: ElevatedButton.icon(
                               onPressed: _showEntryDialog,
-                              icon: SvgPicture.asset('assets/journal/pencil.svg',
-                                  color: primaryColor, width: 19, height: 19),
-                              label: Text("Answer",
-                                  style:
-                                      GoogleFonts.fredoka(color: primaryColor)),
+                              icon: SvgPicture.asset(
+                                'assets/journal/pencil.svg',
+                                color: primaryColor,
+                                width: 19,
+                                height: 19,
+                              ),
+                              label: Text(
+                                "Answer",
+                                style: GoogleFonts.fredoka(color: primaryColor),
+                              ),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    const Color.fromARGB(255, 233, 238, 235),
+                                backgroundColor: const Color.fromARGB(
+                                  255,
+                                  233,
+                                  238,
+                                  235,
+                                ),
                                 shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10)),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
                               ),
                             ),
                           ),
@@ -646,33 +707,41 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                   final habits = habitsSnap.data!.docs;
                   if (habits.isEmpty) return const SizedBox();
 
-                  final todayId =
-                      DateFormat('yyyy-MM-dd').format(DateTime.now());
+                  final todayId = DateFormat(
+                    'yyyy-MM-dd',
+                  ).format(DateTime.now());
 
                   return FutureBuilder<List<DocumentSnapshot>>(
-                    future: Future.wait(habits.map((h) async {
-                      final logRef = FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(FirebaseAuth.instance.currentUser!.uid)
-                          .collection('habits')
-                          .doc(h.id)
-                          .collection('logs')
-                          .doc(todayId)
-                          .get();
-                      return logRef;
-                    })),
+                    future: Future.wait(
+                      habits.map((h) async {
+                        final logRef = FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(FirebaseAuth.instance.currentUser!.uid)
+                            .collection('habits')
+                            .doc(h.id)
+                            .collection('logs')
+                            .doc(todayId)
+                            .get();
+                        return logRef;
+                      }),
+                    ),
                     builder: (context, logSnaps) {
                       if (!logSnaps.hasData) {
                         return const Center(child: CircularProgressIndicator());
                       }
 
                       final completed = logSnaps.data!
-                          .where((d) =>
-                              d.exists &&
-                              ((d.data()
-                                          as Map<String, dynamic>?)?['completion'] ??
-                                      0) ==
-                                  1.0)
+                          .where(
+                            (d) =>
+                                d.exists &&
+                                ((d.data()
+                                            as Map<
+                                              String,
+                                              dynamic
+                                            >?)?['completion'] ??
+                                        0) ==
+                                    1.0,
+                          )
                           .length;
                       final total = habits.length;
 
@@ -687,47 +756,58 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                               Expanded(
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(16),
-                                  onTap: () =>
-                                      widget.onNavigateToTab?.call(1),
+                                  onTap: () => widget.onNavigateToTab?.call(1),
                                   child: Container(
                                     height: 150,
-                                    margin:
-                                        const EdgeInsets.only(right: 10),
+                                    margin: const EdgeInsets.only(right: 10),
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
                                       color: const Color.fromARGB(
-                                          255, 181, 209, 192),
-                                      borderRadius:
-                                          BorderRadius.circular(16),
+                                        255,
+                                        181,
+                                        209,
+                                        192,
+                                      ),
+                                      borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
-                                          color: const Color.fromARGB(
-                                              114, 79, 100, 78),
-                                          width: 1),
+                                        color: const Color.fromARGB(
+                                          114,
+                                          79,
+                                          100,
+                                          78,
+                                        ),
+                                        width: 1,
+                                      ),
                                     ),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text("Today's Habits:",
-                                            style: GoogleFonts.fredoka(
-                                                color: primaryColor,
-                                                fontSize: 18,
-                                                fontWeight:
-                                                    FontWeight.w700)),
-                                        Text("$completed / $total",
-                                            style: GoogleFonts.fredoka(
-                                                color: primaryColor,
-                                                fontSize: 24,
-                                                fontWeight:
-                                                    FontWeight.w700)),
+                                        Text(
+                                          "Today's Habits:",
+                                          style: GoogleFonts.fredoka(
+                                            color: primaryColor,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        Text(
+                                          "$completed / $total",
+                                          style: GoogleFonts.fredoka(
+                                            color: primaryColor,
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
                                         const SizedBox(height: 6),
                                         Text(
-                                            "Grow your garden by checking off habits",
-                                            style: GoogleFonts.fredoka(
-                                                fontSize: 13,
-                                                color: primaryColor,
-                                                fontWeight:
-                                                    FontWeight.w300)),
+                                          "Grow your garden by checking off habits",
+                                          style: GoogleFonts.fredoka(
+                                            fontSize: 13,
+                                            color: primaryColor,
+                                            fontWeight: FontWeight.w300,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -737,41 +817,50 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                               Expanded(
                                 child: InkWell(
                                   borderRadius: BorderRadius.circular(16),
-                                  onTap: () =>
-                                      widget.onNavigateToTab?.call(2),
+                                  onTap: () => widget.onNavigateToTab?.call(2),
                                   child: Container(
                                     height: 150,
-                                    margin:
-                                        const EdgeInsets.only(left: 10),
+                                    margin: const EdgeInsets.only(left: 10),
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
                                       color: const Color.fromARGB(
-                                          255, 181, 209, 192),
-                                      borderRadius:
-                                          BorderRadius.circular(16),
+                                        255,
+                                        181,
+                                        209,
+                                        192,
+                                      ),
+                                      borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
-                                          color: const Color.fromARGB(
-                                              114, 79, 100, 78),
-                                          width: 1),
+                                        color: const Color.fromARGB(
+                                          114,
+                                          79,
+                                          100,
+                                          78,
+                                        ),
+                                        width: 1,
+                                      ),
                                     ),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text("Moods",
-                                            style: GoogleFonts.fredoka(
-                                                color: primaryColor,
-                                                fontSize: 18,
-                                                fontWeight:
-                                                    FontWeight.w700)),
+                                        Text(
+                                          "Moods",
+                                          style: GoogleFonts.fredoka(
+                                            color: primaryColor,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
                                         const SizedBox(height: 2),
                                         Text(
-                                            "Log your mood to create your star constellations",
-                                            style: GoogleFonts.fredoka(
-                                                fontSize: 13,
-                                                color: primaryColor,
-                                                fontWeight:
-                                                    FontWeight.w300)),
+                                          "Log your mood to create your star constellations",
+                                          style: GoogleFonts.fredoka(
+                                            fontSize: 13,
+                                            color: primaryColor,
+                                            fontWeight: FontWeight.w300,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
@@ -787,38 +876,42 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius:
-                                  BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                  color: const Color.fromARGB(
-                                      114, 79, 100, 78),
-                                  width: 1),
+                                color: const Color.fromARGB(114, 79, 100, 78),
+                                width: 1,
+                              ),
                               boxShadow: [
                                 BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2)),
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
                               ],
                             ),
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text("Today's Garden",
-                                    style: GoogleFonts.fredoka(
-                                        color: primaryColor,
-                                        fontSize: 20,
-                                        fontWeight:
-                                            FontWeight.w700)),
+                                Text(
+                                  "Today's Garden",
+                                  style: GoogleFonts.fredoka(
+                                    color: primaryColor,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                                 const SizedBox(height: 10),
                                 Container(
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: const Color.fromARGB(
-                                        255, 233, 238, 235),
-                                    borderRadius:
-                                        BorderRadius.circular(16),
+                                      255,
+                                      233,
+                                      238,
+                                      235,
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
                                   child: _todayGarden(habits),
                                 ),
@@ -833,41 +926,44 @@ class _HomeState extends State<Home> with TickerProviderStateMixin {
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius:
-                                  BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                  color: const Color.fromARGB(
-                                      114, 79, 100, 78),
-                                  width: 1),
+                                color: const Color.fromARGB(114, 79, 100, 78),
+                                width: 1,
+                              ),
                               boxShadow: [
                                 BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2)),
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
                               ],
                             ),
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text("Mood Galaxy",
-                                    style: GoogleFonts.fredoka(
-                                        color: primaryColor,
-                                        fontSize: 20,
-                                        fontWeight:
-                                            FontWeight.w700)),
+                                Text(
+                                  "Mood Galaxy",
+                                  style: GoogleFonts.fredoka(
+                                    color: primaryColor,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                                 const SizedBox(height: 10),
                                 Container(
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: const Color.fromARGB(
-                                        255, 233, 238, 235),
-                                    borderRadius:
-                                        BorderRadius.circular(16),
+                                      255,
+                                      233,
+                                      238,
+                                      235,
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
                                   ),
-                                  child:
-                                      _homeMoodGalaxy(_starController),
+                                  child: _homeMoodGalaxy(_starController),
                                 ),
                               ],
                             ),
