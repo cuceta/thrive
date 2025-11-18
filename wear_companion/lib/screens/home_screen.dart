@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:wear_companion/screens/habit_list_screen.dart';
 import '../core/firebase_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -58,7 +59,10 @@ class _HomeScreenState extends State<HomeScreen> {
               iconPath: 'assets/icons/habit-icon.svg',
               label: 'Log Habit',
               onPressed: () {
-                // TODO: Navigate to habit logging page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => HabitListScreen()),
+                );
               },
             ),
             // const SizedBox(height: 5),
@@ -87,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(10),
           side: const BorderSide(
             color: Color.fromARGB(255, 181, 200, 189),
-            width: 1.0, 
+            width: 1.0,
           ),
         ),
       ),
@@ -105,10 +109,10 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             label,
             style: GoogleFonts.fredoka(
-                fontSize: 18,
-                color: primaryColor,
-                fontWeight: FontWeight.w600,
-              ),
+              fontSize: 18,
+              color: primaryColor,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),

@@ -42,9 +42,9 @@ class _SplashScreenState extends State<SplashScreen> {
       backgroundColor: const Color.fromARGB(255, 217, 251, 229),
       body: Center(
         child: Image.asset(
-          'assets/images/joey.gif',
-          width: 120,
-          height: 120,
+          'assets/images/joey.GIF',
+          width: 180,
+          height: 180,
         ),
       ),
     );

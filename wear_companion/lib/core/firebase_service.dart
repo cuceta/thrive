@@ -5,6 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class FirebaseService {
   final _auth = FirebaseAuth.instance;
   final _db = FirebaseFirestore.instance;
+  FirebaseFirestore get db => _db;
+  
+
 
   User? get currentUser => _auth.currentUser;
 
