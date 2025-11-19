@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../core/firebase_service.dart';
-import 'habit_log_screen.dart';
-// import 'package:intl/intl.dart';
+import 'mood_log_screen.dart';
 
-class HabitListScreen extends StatelessWidget {
-  HabitListScreen({super.key});
+class MoodListScreen extends StatelessWidget {
+  MoodListScreen({super.key});
 
   final FirebaseService firebaseService = FirebaseService();
   final Color primaryColor = const Color.fromRGBO(47, 76, 45, 1);
@@ -14,20 +13,20 @@ class HabitListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uid = firebaseService.currentUser?.uid;
-    final habitsStream = firebaseService.db
+    final uid = firebaseService.currentUser!.uid;
+
+    final moodsStream = firebaseService.db
         .collection('users')
         .doc(uid)
-        .collection('habits')
+        .collection('moods')
         .orderBy('createdAt')
         .snapshots();
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 217, 251, 229),
-
       body: SafeArea(
         child: StreamBuilder(
-          stream: habitsStream,
+          stream: moodsStream,
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
               return const Center(child: CircularProgressIndicator());
@@ -38,12 +37,12 @@ class HabitListScreen extends StatelessWidget {
             return SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
-
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 20),
 
+                    // ----- HEADER (matches HabitListScreen exactly) -----
                     LayoutBuilder(
                       builder: (context, constraints) {
                         return ConstrainedBox(
@@ -72,7 +71,7 @@ class HabitListScreen extends StatelessWidget {
                               ),
                               const SizedBox(width: 10),
                               Text(
-                                "Your Habits",
+                                "Your Moods",
                                 style: GoogleFonts.fredoka(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
@@ -91,26 +90,23 @@ class HabitListScreen extends StatelessWidget {
 
                     if (docs.isEmpty)
                       Center(
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 40),
-                          child: Text(
-                            "No habits yet.\nAdd them on your phone!",
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.fredoka(
-                              color: primaryColor,
-                              fontSize: 14,
-                            ),
+                        child: Text(
+                          "No moods yet.\nAdd them on your phone!",
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.fredoka(
+                            fontSize: 14,
+                            color: primaryColor,
                           ),
                         ),
                       )
                     else
                       Column(
-                        children: docs.map((habit) {
-                          final name = habit['name'];
-                          final icon = habit['iconPath'];
+                        children: docs.map((mood) {
+                          final name = mood['name'];
+                          final iconPath = mood['iconPath'];
 
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 2),
+                            padding: const EdgeInsets.only(bottom: 3),
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color.fromARGB(
@@ -131,54 +127,45 @@ class HabitListScreen extends StatelessWidget {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => HabitLogScreen(
-                                      habitId: habit.id,
-                                      habitName: name,
-                                      iconPath: icon,
+                                    builder: (_) => MoodLogScreen(
+                                      moodId: mood.id,
+                                      moodName: name,
+                                      iconPath: iconPath,
                                     ),
                                   ),
                                 );
                               },
-                              child: LayoutBuilder(
-                                builder: (context, constraints) {
-                                  return ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth: constraints.maxWidth,
+                              child: Row(
+                                children: [
+                                  SvgPicture.asset(
+                                    iconPath,
+                                    width: 22,
+                                    height: 22,
+                                    colorFilter: const ColorFilter.mode(
+                                      Color(0xFFFFD54F),
+                                      BlendMode.srcIn,
                                     ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      children: [
-                                        SvgPicture.asset(
-                                          icon,
-                                          width: 22,
-                                          height: 22,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Expanded(
-                                          // important: prevents right overflow
-                                          child: Text(
-                                            name,
-                                            style: GoogleFonts.fredoka(
-                                              fontSize: 16,
-                                              color: primaryColor,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                            overflow:
-                                                TextOverflow.ellipsis, // safety
-                                          ),
-                                        ),
-                                      ],
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      name,
+                                      style: GoogleFonts.fredoka(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: primaryColor,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                  );
-                                },
+                                  ),
+                                ],
                               ),
                             ),
                           );
                         }).toList(),
                       ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),

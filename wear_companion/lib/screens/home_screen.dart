@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:wear_companion/screens/habit_list_screen.dart';
+import 'package:wear_companion/screens/mood_list_screen.dart';
 import '../core/firebase_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -70,7 +71,10 @@ class _HomeScreenState extends State<HomeScreen> {
               iconPath: 'assets/icons/mood-icon.svg',
               label: 'Log Mood',
               onPressed: () {
-                // TODO: Navigate to mood logging page
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => MoodListScreen()),
+                );
               },
             ),
           ],

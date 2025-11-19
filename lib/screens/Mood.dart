@@ -23,6 +23,14 @@ class Mood extends StatefulWidget {
   State<Mood> createState() => _MoodState();
 }
 
+String getLocalDateId() {
+  final now = DateTime.now();
+  final offset = now.timeZoneOffset;
+  final local = now.toUtc().add(offset);
+  final day = DateTime(local.year, local.month, local.day);
+  return DateFormat('yyyy-MM-dd').format(day);
+}
+
 class _YellowStarsPainter extends CustomPainter {
   final Random rand = Random(42);
   @override
@@ -275,9 +283,7 @@ class _MoodState extends State<Mood> {
 
                           setDialogState(() => isSaving = true);
 
-                          final dateId = DateFormat(
-                            'yyyy-MM-dd',
-                          ).format(DateTime.now());
+                          final dateId = getLocalDateId();
 
                           await FirebaseFirestore.instance
                               .collection('users')
