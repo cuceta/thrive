@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:rxdart/rxdart.dart';
 
 const List<String> availableMoodIcons = [
   'assets/moods/star_1.svg',
@@ -194,7 +195,7 @@ class _MoodState extends State<Mood> {
                                   'iconPath': selectedIcon,
                                   'createdAt': FieldValue.serverTimestamp(),
                                 });
-                                // .timeout(const Duration(seconds: 12));
+                            // .timeout(const Duration(seconds: 12));
                             if (mounted &&
                                 Navigator.of(dialogContext).canPop()) {
                               Navigator.of(dialogContext).pop();
@@ -294,7 +295,7 @@ class _MoodState extends State<Mood> {
                               .doc(dateId)
                               .set({
                                 'level': v,
-                                'timestamp': FieldValue.serverTimestamp(),
+                                'timestamp': DateTime.now(),
                               });
 
                           if (mounted && Navigator.of(dialogContext).canPop()) {
@@ -471,8 +472,8 @@ class _MoodState extends State<Mood> {
         }
 
         // Load logs for each mood (one-time per build). For simplicity we do gets here.
-        return FutureBuilder<List<QuerySnapshot>>(
-          future: Future.wait(
+        return StreamBuilder<List<QuerySnapshot>>(
+          stream: CombineLatestStream.list(
             moods.map((m) {
               return FirebaseFirestore.instance
                   .collection('users')
@@ -484,7 +485,7 @@ class _MoodState extends State<Mood> {
                     'timestamp',
                     isGreaterThanOrEqualTo: Timestamp.fromDate(weekDays.first),
                   )
-                  .get();
+                  .snapshots();
             }),
           ),
           builder: (context, logsSnaps) {
@@ -495,6 +496,7 @@ class _MoodState extends State<Mood> {
               );
             }
 
+            // final logDocsPerMood = logsSnaps.data!; // List<QuerySnapshot>
             // Build all points (all moods together)
             final List<Map<String, dynamic>> points = [];
             for (int mi = 0; mi < moods.length; mi++) {
@@ -899,69 +901,69 @@ class _MoodState extends State<Mood> {
 
 // ====== Painters / Decorative layers ======
 
-class _AveragePainter extends CustomPainter {
-  final Path path;
-  _AveragePainter({required this.path});
+// class _AveragePainter extends CustomPainter {
+//   final Path path;
+//   _AveragePainter({required this.path});
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.6)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.5);
+//   @override
+//   void paint(Canvas canvas, Size size) {
+//     final paint = Paint()
+//       ..color = Colors.white.withOpacity(0.6)
+//       ..style = PaintingStyle.stroke
+//       ..strokeWidth = 2.0
+//       ..strokeCap = StrokeCap.round
+//       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 0.5);
 
-    // scale to fit provided size
-    canvas.save();
-    canvas.clipRect(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.drawPath(path, paint);
-    canvas.restore();
-  }
+//     // scale to fit provided size
+//     canvas.save();
+//     canvas.clipRect(Rect.fromLTWH(0, 0, size.width, size.height));
+//     canvas.drawPath(path, paint);
+//     canvas.restore();
+//   }
 
-  @override
-  bool shouldRepaint(covariant _AveragePainter oldDelegate) =>
-      oldDelegate.path != path;
-}
+//   @override
+//   bool shouldRepaint(covariant _AveragePainter oldDelegate) =>
+//       oldDelegate.path != path;
+// }
 
-class _TinyStarsLayer extends StatelessWidget {
-  _TinyStarsLayer({super.key});
+// class _TinyStarsLayer extends StatelessWidget {
+//   _TinyStarsLayer({super.key});
 
-  // Create 25 random star positions with fixed seed (so they look random but consistent)
-  final List<_Star> _stars = List.generate(25, (i) {
-    final dx = (i * 73 % 100) / 100; // pseudo-random pattern
-    final dy = ((i * 37 + 11) % 100) / 100;
-    final r = 0.8 + (i % 5) * 0.25;
-    final opacity = 0.5 + (i % 7) * 0.06;
-    return _Star(Offset(dx, dy), r, opacity);
-  });
+//   // Create 25 random star positions with fixed seed (so they look random but consistent)
+//   final List<_Star> _stars = List.generate(25, (i) {
+//     final dx = (i * 73 % 100) / 100; // pseudo-random pattern
+//     final dy = ((i * 37 + 11) % 100) / 100;
+//     final r = 0.8 + (i % 5) * 0.25;
+//     final opacity = 0.5 + (i % 7) * 0.06;
+//     return _Star(Offset(dx, dy), r, opacity);
+//   });
 
-  @override
-  Widget build(BuildContext context) {
-    return Positioned.fill(child: CustomPaint(painter: _StarsPainter(_stars)));
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Positioned.fill(child: CustomPaint(painter: _StarsPainter(_stars)));
+//   }
+// }
 
-class _Star {
-  final Offset pos;
-  final double radius;
-  final double opacity;
-  const _Star(this.pos, this.radius, this.opacity);
-}
+// class _Star {
+//   final Offset pos;
+//   final double radius;
+//   final double opacity;
+//   const _Star(this.pos, this.radius, this.opacity);
+// }
 
-class _StarsPainter extends CustomPainter {
-  final List<_Star> stars;
-  _StarsPainter(this.stars);
+// class _StarsPainter extends CustomPainter {
+//   final List<_Star> stars;
+//   _StarsPainter(this.stars);
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    for (final s in stars) {
-      final p = Paint()..color = Colors.white.withOpacity(s.opacity);
-      final pos = Offset(s.pos.dx * size.width, s.pos.dy * size.height);
-      canvas.drawCircle(pos, s.radius, p);
-    }
-  }
+//   @override
+//   void paint(Canvas canvas, Size size) {
+//     for (final s in stars) {
+//       final p = Paint()..color = Colors.white.withOpacity(s.opacity);
+//       final pos = Offset(s.pos.dx * size.width, s.pos.dy * size.height);
+//       canvas.drawCircle(pos, s.radius, p);
+//     }
+//   }
 
-  @override
-  bool shouldRepaint(covariant _StarsPainter oldDelegate) => false;
-}
+//   @override
+//   bool shouldRepaint(covariant _StarsPainter oldDelegate) => false;
+// }
