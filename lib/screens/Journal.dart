@@ -370,6 +370,17 @@ class _JournalState extends State<Journal> {
     );
   }
 
+  BoxDecoration _sectionBoxDecoration() {
+    return BoxDecoration(
+      color: const Color.fromARGB(255, 181, 209, 192),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: const Color.fromARGB(114, 79, 100, 78),
+        width: 1,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -438,15 +449,9 @@ class _JournalState extends State<Journal> {
 
               // Prompt Section
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(255, 181, 209, 192),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color.fromARGB(114, 79, 100, 78),
-                    width: 1,
-                  ),
-                ),
+                decoration: _sectionBoxDecoration(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -467,73 +472,64 @@ class _JournalState extends State<Journal> {
                       ),
                     ),
                     const SizedBox(height: 30),
+
                     Row(
                       children: [
-                        ElevatedButton.icon(
-                          onPressed: _loadRandomPrompt,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color.fromARGB(
-                              255,
-                              233,
-                              238,
-                              235,
+                        // New Prompt Button
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _loadRandomPrompt,
+                            icon: SvgPicture.asset(
+                              'assets/journal/reload.svg',
+                              width: 13,
+                              height: 13,
+                              color: primaryColor,
                             ),
-                            side: const BorderSide(
-                              color: Color.fromARGB(
+                            label: Text(
+                              "New Prompt",
+                              style: GoogleFonts.fredoka(color: primaryColor),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color.fromARGB(
                                 255,
-                                181,
-                                200,
-                                189,
-                              ), // Border color
-                              width: 0.5, // Border width
+                                233,
+                                238,
+                                235,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          icon: SvgPicture.asset(
-                            'assets/journal/reload.svg',
-                            color: primaryColor,
-                            width: 13,
-                            height: 13,
-                          ),
-                          label: Text(
-                            "New Prompt",
-                            style: GoogleFonts.fredoka(color: primaryColor),
                           ),
                         ),
+
                         const SizedBox(width: 10),
-                        ElevatedButton.icon(
-                          onPressed: _showEntryDialog,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color.fromARGB(
-                              255,
-                              233,
-                              238,
-                              235,
+
+                        // Answer Prompt Button
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _showEntryDialog,
+                            icon: SvgPicture.asset(
+                              'assets/journal/pencil.svg',
+                              width: 19,
+                              height: 19,
+                              color: primaryColor,
                             ),
-                            side: const BorderSide(
-                              color: Color.fromARGB(
+                            label: Text(
+                              "Answer",
+                              style: GoogleFonts.fredoka(color: primaryColor),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color.fromARGB(
                                 255,
-                                181,
-                                200,
-                                189,
-                              ), // Border color
-                              width: 0.5, // Border width
+                                233,
+                                238,
+                                235,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          icon: SvgPicture.asset(
-                            'assets/journal/pencil.svg',
-                            color: primaryColor,
-                            width: 19,
-                            height: 19,
-                          ),
-                          label: Text(
-                            "Answer Prompt",
-                            style: GoogleFonts.fredoka(color: primaryColor),
                           ),
                         ),
                       ],

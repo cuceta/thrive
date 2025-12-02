@@ -38,6 +38,13 @@ target 'Runner' do
   end
 end
 
+# target 'RunnerWatch Watch App' do
+#   platform :watchos, '10.0'
+#   pod 'FirebaseCore'
+#   pod 'FirebaseAuth'
+#   # pod 'FirebaseFirestore'
+# end
+
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
