@@ -66,7 +66,7 @@ The Thrive app was developed using a product design process that included:
 To run this project locally:
 
 ```bash
-git clone https://github.com/yourusername/thrive.git
+git clone https://github.com/cuceta/thrive
 cd thrive
 flutter pub get
 flutter run
